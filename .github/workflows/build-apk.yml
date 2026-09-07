@@ -1,0 +1,91 @@
+name: TRIKA.TRAD APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+
+      - name: Recuperer le projet
+        uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installer dependances systeme
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git \
+            zip \
+            unzip \
+            openjdk-17-jdk \
+            autoconf \
+            automake \
+            libtool \
+            pkg-config \
+            build-essential \
+            libffi-dev \
+            libssl-dev
+
+      - name: Installer Buildozer
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install buildozer
+          python -m pip install "cython<3"
+
+      - name: Preparer main.py
+        run: |
+          cp "TRIKA.TRAD.py" "main.py"
+
+      - name: Creer buildozer.spec
+        run: |
+          cat > buildozer.spec <<'EOF'
+          [app]
+
+          title = TRIKA.TRAD
+          package.name = trikatrad
+          package.domain = org.trikatech
+
+          source.dir = .
+          source.include_exts = py,png,jpg,jpeg,db,txt,mp4
+
+          version = 1.0
+
+          requirements = python3,kivy,pillow,requests
+
+          orientation = portrait
+          fullscreen = 0
+
+          icon.filename = ICONE.png
+
+          android.api = 35
+          android.minapi = 23
+          android.ndk = 28c
+
+          android.archs = arm64-v8a
+
+          android.permissions = INTERNET
+
+          [buildozer]
+
+          log_level = 2
+          warn_on_root = 0
+          EOF
+
+      - name: Construire APK
+        env:
+          BUILDOZER_ALLOW_ROOT: "1"
+        run: |
+          buildozer -v android debug
+
+      - name: Publier APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TRIKA-TRAD-APK
+          path: bin/*.apk
